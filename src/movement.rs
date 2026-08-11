@@ -14,6 +14,7 @@ pub struct Wrap;
 pub struct MovementSet;
 
 #[derive(Component, Default)]
+#[allow(dead_code)]
 pub struct Collider {
     pub radius: f32,
 }
