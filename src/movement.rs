@@ -13,6 +13,11 @@ pub struct Wrap;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MovementSet;
 
+#[derive(Component, Default)]
+pub struct Collider {
+    pub radius: f32,
+}
+
 pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {

@@ -4,6 +4,8 @@ use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
 mod movement;
+mod projectile;
+mod shapes;
 mod ship;
 mod tuning;
 fn main() {
@@ -19,7 +21,12 @@ fn main() {
         .insert_resource(ClearColor(Color::srgb(0.02, 0.02, 0.04)))
         .add_systems(Startup, spawn_camera)
         .init_resource::<tuning::Tuning>()
-        .add_plugins((movement::MovementPlugin, ship::ShipPlugin))
+        .add_plugins((
+            shapes::ShapesPlugin,
+            movement::MovementPlugin,
+            ship::ShipPlugin,
+            projectile::ProjectilePlugin,
+        ))
         .configure_sets(FixedUpdate, ship::ShipSet.before(movement::MovementSet))
         .run();
 }

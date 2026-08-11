@@ -8,6 +8,11 @@ pub struct Tuning {
     pub turn_rate: f32,
     pub drag: f32,
     pub max_speed: f32,
+    pub bullet_radius: f32,
+    pub bullet_speed: f32,
+    pub bullet_lifetime: f32,
+    pub fire_cooldown: f32,
+    pub max_bullets: usize,
 }
 
 impl Default for Tuning {
@@ -19,6 +24,11 @@ impl Default for Tuning {
             turn_rate: 3.6,
             drag: 0.6,
             max_speed: 520.0,
+            bullet_radius: 2.5,
+            bullet_speed: 620.0,
+            bullet_lifetime: 1.1,
+            fire_cooldown: 0.18,
+            max_bullets: 4,
         }
     }
 }

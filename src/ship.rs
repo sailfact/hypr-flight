@@ -5,12 +5,15 @@ use crate::tuning::Tuning;
 
 #[derive(Component)]
 #[require(ShipIntent, Velocity, Wrap)]
-pub struct Ship;
+pub struct Ship {
+    pub cooldown: Timer,
+}
 
 #[derive(Component, Default)]
 pub struct ShipIntent {
     pub turn: f32,
     pub thrusting: bool,
+    pub firing: bool,
 }
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -19,6 +22,14 @@ pub struct ShipSet;
 #[derive(Component)]
 struct ThrustFlame;
 
+#[derive(Event)]
+pub struct FireRequested {
+    pub owner: Entity,
+    pub origin: Vec2,
+    pub direction: Dir2,
+    pub inherited: Vec2,
+}
+
 /// Plugins
 pub struct ShipPlugin;
 
@@ -26,7 +37,7 @@ impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_ship)
             .add_systems(Update, (read_input, flame_visibility))
-            .add_systems(FixedUpdate, (turn, thrust).chain().in_set(ShipSet));
+            .add_systems(FixedUpdate, (turn, thrust, fire).chain().in_set(ShipSet));
     }
 }
 
@@ -56,7 +67,9 @@ fn spawn_ship(
     let flame_mat = materials.add(Color::linear_rgb(5.0, 1.6, 0.3));
 
     commands.spawn((
-        Ship,
+        Ship {
+            cooldown: ready_timer(tuning.fire_cooldown),
+        },
         Mesh2d(hull),
         MeshMaterial2d(hull_mat),
         Transform::default(),
@@ -68,6 +81,13 @@ fn spawn_ship(
             Visibility::Hidden,
         )],
     ));
+}
+
+fn ready_timer(secs: f32) -> Timer {
+    let mut t = Timer::from_seconds(secs, TimerMode::Once);
+    let d = t.duration();
+    t.tick(d);
+    t
 }
 
 fn facing(transform: &Transform) -> Vec2 {
@@ -126,4 +146,33 @@ fn flame_visibility(
             Visibility::Hidden
         };
     }
+}
+
+fn fire(
+    time: Res<Time>,
+    tuning: Res<Tuning>,
+    mut commands: Commands,
+    ship: Option<Single<(Entity, &mut Ship, &mut ShipIntent, &Transform, &Velocity)>>,
+) {
+    let Some(ship) = ship else { return };
+    let (entity, mut ship, mut intent, transform, velocity) = ship.into_inner();
+
+    ship.cooldown.tick(time.delta());
+
+    if !core::mem::take(&mut intent.firing) || !ship.cooldown.is_finished() {
+        return;
+    }
+
+    let heading = facing(transform);
+    let Ok(direction) = Dir2::new(heading) else {
+        return;
+    };
+    ship.cooldown.reset();
+
+    commands.trigger(FireRequested {
+        owner: entity,
+        origin: transform.translation.truncate() + heading * tuning.ship_radius * 1.8,
+        direction,
+        inherited: velocity.linear,
+    });
 }
