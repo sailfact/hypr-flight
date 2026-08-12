@@ -64,8 +64,8 @@ pub struct ShipPlugin;
 impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_ship)
-            .add_systems(Update, (read_input, flame_visibility))
-            .add_systems(FixedUpdate, (aim, thrust, fire).chain().in_set(ShipSet));
+            .add_systems(Update, (read_input, aim, flame_visibility))
+            .add_systems(FixedUpdate, (thrust, fire).chain().in_set(ShipSet));
     }
 }
 
@@ -134,19 +134,20 @@ fn read_input(
     intent.firing |= buttons.pressed(MouseButton::Left);
 }
 
-fn aim(ship: Option<Single<ShipAim>>) {
+fn aim(time: Res<Time>, tuning: Res<Tuning>, ship: Option<Single<ShipAim>>) {
     let Some(mut ship) = ship else { return };
 
-    let Some(target) = ship.intent.aim_at else {
+    let Some(target_point) = ship.intent.aim_at else {
         return;
     };
-    let to_target = target - ship.transform.translation.truncate();
+    let to_target = target_point - ship.transform.translation.truncate();
     let Ok(direction) = Dir2::new(to_target) else {
         return;
     };
 
-    ship.transform.rotation =
-        Quat::from_rotation_z(direction.to_angle() - std::f32::consts::FRAC_PI_2);
+    let target = Quat::from_rotation_z(direction.to_angle() - std::f32::consts::FRAC_PI_2);
+    let max_step = tuning.turn_rate * time.delta_secs();
+    ship.transform.rotation = ship.transform.rotation.rotate_towards(target, max_step);
 }
 
 fn thrust(time: Res<Time>, tuning: Res<Tuning>, ship: Option<Single<ShipMotion>>) {
