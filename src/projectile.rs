@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 
-use crate::movement::{Collider, Velocity, Wrap};
+use crate::movement::{Collider, Velocity};
 use crate::shapes::ShapeAssets;
 use crate::ship::FireRequested;
 use crate::tuning::Tuning;
 
 #[derive(Component)]
-#[require(Velocity, Wrap)]
+#[require(Velocity)]
 pub struct Bullet {
+    #[allow(dead_code)]
     pub owner: Entity,
 }
 

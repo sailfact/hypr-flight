@@ -1,20 +1,21 @@
+use bevy::camera::Camera;
 use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
-use crate::movement::{Velocity, Wrap};
+use crate::movement::Velocity;
 use crate::shapes::ShapeAssets;
 use crate::tuning::Tuning;
 
 #[derive(Component)]
-#[require(ShipIntent, Velocity, Wrap)]
+#[require(ShipIntent, Velocity)]
 pub struct Ship {
     pub cooldown: Timer,
 }
 
 #[derive(Component, Default)]
 pub struct ShipIntent {
-    pub turn: f32,
-    pub thrusting: bool,
+    pub move_input: Vec2,
+    pub aim_at: Option<Vec2>,
     pub firing: bool,
 }
 
@@ -28,8 +29,23 @@ struct ShipFiring {
     velocity: &'static Velocity,
 }
 
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub struct ShipAim {
+    transform: &'static mut Transform,
+    intent: &'static ShipIntent,
+}
+
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ShipSet;
+
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub struct ShipMotion {
+    transform: &'static Transform,
+    intent: &'static ShipIntent,
+    velocity: &'static mut Velocity,
+}
 
 #[derive(Component)]
 struct ThrustFlame;
@@ -49,7 +65,7 @@ impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_ship)
             .add_systems(Update, (read_input, flame_visibility))
-            .add_systems(FixedUpdate, (turn, thrust, fire).chain().in_set(ShipSet));
+            .add_systems(FixedUpdate, (aim, thrust, fire).chain().in_set(ShipSet));
     }
 }
 
@@ -82,42 +98,68 @@ fn facing(transform: &Transform) -> Vec2 {
     (transform.rotation * Vec3::Y).truncate()
 }
 
-fn read_input(keys: Res<ButtonInput<KeyCode>>, intent: Option<Single<&mut ShipIntent>>) {
+fn read_input(
+    keys: Res<ButtonInput<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    window: Single<&Window>,
+    camera: Single<(&Camera, &GlobalTransform)>,
+    intent: Option<Single<&mut ShipIntent>>,
+) {
     let Some(mut intent) = intent else { return };
 
-    let left = keys.pressed(KeyCode::ArrowLeft) || keys.pressed(KeyCode::KeyA);
-    let right = keys.pressed(KeyCode::ArrowRight) || keys.pressed(KeyCode::KeyD);
+    let (forward, back) = (keys.pressed(KeyCode::KeyW), keys.pressed(KeyCode::KeyS));
+    let (left, right) = (keys.pressed(KeyCode::KeyA), keys.pressed(KeyCode::KeyD));
 
-    intent.turn = (left as i32 - right as i32) as f32;
-    intent.thrusting = keys.pressed(KeyCode::ArrowUp) || keys.pressed(KeyCode::KeyW);
-    intent.firing |= keys.pressed(KeyCode::Space);
+    intent.move_input = Vec2::new(
+        (right as i32 - left as i32) as f32,
+        (forward as i32 - back as i32) as f32,
+    );
+
+    let (camera, camera_transform) = *camera;
+
+    // The letterbox viewport is offset from the window origin by the black bars,
+    // but cursor_position() is window-relative. Subtract the offset.
+    let vp_offset = camera
+        .viewport
+        .as_ref()
+        .map(|v| v.physical_position.as_vec2())
+        .unwrap_or(Vec2::ZERO);
+
+    intent.aim_at = window.cursor_position().and_then(|cursor| {
+        camera
+            .viewport_to_world_2d(camera_transform, cursor - vp_offset)
+            .ok()
+    });
+
+    intent.firing |= buttons.pressed(MouseButton::Left);
 }
 
-fn turn(
-    time: Res<Time>,
-    tuning: Res<Tuning>,
-    ship: Option<Single<(&mut Transform, &ShipIntent), With<Ship>>>,
-) {
-    let Some(ship) = ship else { return };
-    let (mut transform, intent) = ship.into_inner();
-    transform.rotate_z(intent.turn * tuning.turn_rate * time.delta_secs());
+fn aim(ship: Option<Single<ShipAim>>) {
+    let Some(mut ship) = ship else { return };
+
+    let Some(target) = ship.intent.aim_at else {
+        return;
+    };
+    let to_target = target - ship.transform.translation.truncate();
+    let Ok(direction) = Dir2::new(to_target) else {
+        return;
+    };
+
+    ship.transform.rotation =
+        Quat::from_rotation_z(direction.to_angle() - std::f32::consts::FRAC_PI_2);
 }
 
-fn thrust(
-    time: Res<Time>,
-    tuning: Res<Tuning>,
-    ship: Option<Single<(&Transform, &ShipIntent, &mut Velocity)>>,
-) {
-    let Some(ship) = ship else { return };
-    let (transform, intent, mut velocity) = ship.into_inner();
+fn thrust(time: Res<Time>, tuning: Res<Tuning>, ship: Option<Single<ShipMotion>>) {
+    let Some(mut ship) = ship else { return };
     let dt = time.delta_secs();
 
-    if intent.thrusting {
-        velocity.linear += facing(transform) * tuning.thrust * dt;
+    if let Some(input) = ship.intent.move_input.try_normalize() {
+        let world_dir = (ship.transform.rotation * input.extend(0.0)).truncate();
+        ship.velocity.linear += world_dir * tuning.thrust * dt;
     }
 
-    velocity.linear *= (-tuning.drag * dt).exp();
-    velocity.linear = velocity.linear.clamp_length_max(tuning.max_speed);
+    ship.velocity.linear *= (-tuning.drag * dt).exp();
+    ship.velocity.linear = ship.velocity.linear.clamp_length_max(tuning.max_speed);
 }
 
 fn flame_visibility(
@@ -126,7 +168,7 @@ fn flame_visibility(
     mut flames: Query<&mut Visibility, (With<ThrustFlame>, Without<Ship>)>,
 ) {
     let Some(intent) = intent else { return };
-    let lit = intent.thrusting && (time.elapsed_secs() * 30.0).sin() > -0.3;
+    let lit = intent.move_input.y > 0.0 && (time.elapsed_secs() * 30.0).sin() > -0.3;
 
     for mut visibility in &mut flames {
         *visibility = if lit {
