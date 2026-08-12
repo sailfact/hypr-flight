@@ -28,14 +28,7 @@ fn spawn_bullet(
     mut commands: Commands,
     shapes: Res<ShapeAssets>,
     tuning: Res<Tuning>,
-    existing: Query<&Bullet>,
 ) {
-    // The concurrent cap lives here, not in ship.rs — this module owns bullets.
-    let in_flight = existing.iter().filter(|b| b.owner == fired.owner).count();
-    if in_flight >= tuning.max_bullets {
-        return;
-    }
-
     commands.spawn((
         Bullet { owner: fired.owner },
         Velocity {
