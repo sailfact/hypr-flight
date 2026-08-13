@@ -13,6 +13,7 @@ pub enum GameState {
     Playing,
     Paused,
     GameOver,
+    Splash,
 }
 
 #[derive(Resource, Debug, PartialEq, Eq, Clone, Copy)]
@@ -26,4 +27,4 @@ pub enum DisplayQuality {
 pub struct Setting<T>(T);
 
 #[derive(Resource, Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Volume(u32);
+pub struct Volume(pub u32);

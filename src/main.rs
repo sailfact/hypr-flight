@@ -4,6 +4,7 @@ use bevy::post_process::bloom::Bloom;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
+use crate::state::{DisplayQuality, GameState, Volume, game, menu, splash};
 use crate::tuning::Tuning;
 
 mod movement;
@@ -23,7 +24,10 @@ fn main() {
             }),
             ..default()
         }))
+        .insert_resource(DisplayQuality::Medium)
+        .insert_resource(Volume(7))
         .insert_resource(ClearColor(Color::srgb(0.02, 0.02, 0.04)))
+        .init_state::<GameState>()
         .add_systems(Startup, spawn_camera)
         .add_systems(Update, letterbox)
         .init_resource::<tuning::Tuning>()
@@ -32,6 +36,9 @@ fn main() {
             movement::MovementPlugin,
             ship::ShipPlugin,
             projectile::ProjectilePlugin,
+            splash::splash_plugin,
+            menu::menu_plugin,
+            game::game_plugin,
         ))
         .configure_sets(FixedUpdate, ship::ShipSet.before(movement::MovementSet))
         .run();
