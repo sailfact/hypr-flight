@@ -10,6 +10,7 @@ mod movement;
 mod projectile;
 mod shapes;
 mod ship;
+mod state;
 mod tuning;
 
 fn main() {
