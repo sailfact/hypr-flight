@@ -12,6 +12,8 @@ pub struct Tuning {
     pub bullet_speed: f32,
     pub bullet_lifetime: f32,
     pub fire_cooldown: f32,
+    pub camera_view_height: f32,
+    pub camera_zoom_base: f32,
 }
 
 impl Default for Tuning {
@@ -27,6 +29,8 @@ impl Default for Tuning {
             bullet_speed: 620.0,
             bullet_lifetime: 1.1,
             fire_cooldown: 0.09,
+            camera_view_height: 720.0,
+            camera_zoom_base: 1.0,
         }
     }
 }
