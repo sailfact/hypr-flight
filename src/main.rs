@@ -2,9 +2,6 @@
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
-use crate::background::BackgroundPlugin;
-use crate::camera::CameraPlugin;
-
 mod background;
 mod camera;
 mod movement;
@@ -30,8 +27,8 @@ fn main() {
             movement::MovementPlugin,
             ship::ShipPlugin,
             projectile::ProjectilePlugin,
-            BackgroundPlugin,
-            CameraPlugin,
+            background::BackgroundPlugin,
+            camera::CameraPlugin,
         ))
         .configure_sets(FixedUpdate, ship::ShipSet.before(movement::MovementSet))
         .run();
