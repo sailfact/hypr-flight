@@ -2,18 +2,26 @@ use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct Tuning {
-    pub playfield: Vec2,
-    pub ship_radius: f32,
-    pub thrust: f32,
-    pub turn_rate: f32,
-    pub drag: f32,
-    pub max_speed: f32,
+    pub boost_max_speed: f32,
     pub bullet_radius: f32,
     pub bullet_speed: f32,
     pub bullet_lifetime: f32,
-    pub fire_cooldown: f32,
     pub camera_view_height: f32,
     pub camera_zoom_base: f32,
+    pub camera_lookahead: f32,
+    pub camera_lookahead_max: f32,
+    pub camera_zoom_max: f32,
+    pub camera_zoom_lambda: f32,
+    pub camera_follow_lambda: f32,
+    pub drag: f32,
+    pub fire_cooldown: f32,
+    pub max_speed: f32,
+    pub playfield: Vec2,
+    pub shake_max_offset: f32,
+    pub ship_radius: f32,
+    pub thrust: f32,
+    pub trauma_decay: f32,
+    pub turn_rate: f32,
 }
 
 impl Default for Tuning {
@@ -31,6 +39,14 @@ impl Default for Tuning {
             fire_cooldown: 0.09,
             camera_view_height: 720.0,
             camera_zoom_base: 1.0,
+            trauma_decay: 1.4,
+            camera_lookahead: 0.35,
+            camera_lookahead_max: 260.0,
+            boost_max_speed: 900.0,
+            camera_zoom_max: 1.35,
+            camera_zoom_lambda: 3.0,
+            camera_follow_lambda: 6.0,
+            shake_max_offset: 18.0,
         }
     }
 }

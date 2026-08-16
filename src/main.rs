@@ -1,10 +1,8 @@
-use bevy::core_pipeline::tonemapping::{DebandDither, Tonemapping};
-use bevy::post_process::bloom::Bloom;
+#![allow(unused_imports)]
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
 use crate::camera::CameraPlugin;
-use crate::tuning::Tuning;
 
 mod camera;
 mod movement;
@@ -24,14 +22,13 @@ fn main() {
             ..default()
         }))
         .insert_resource(ClearColor(Color::srgb(0.02, 0.02, 0.04)))
-        // .add_systems(Startup, spawn_camera)
-        // .add_systems(Update, letterbox)
         .init_resource::<tuning::Tuning>()
         .add_plugins((
             shapes::ShapesPlugin,
             movement::MovementPlugin,
             ship::ShipPlugin,
             projectile::ProjectilePlugin,
+            CameraPlugin,
         ))
         .configure_sets(FixedUpdate, ship::ShipSet.before(movement::MovementSet))
         .run();
