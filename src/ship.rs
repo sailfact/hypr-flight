@@ -1,6 +1,6 @@
 use bevy::camera::Camera;
 use bevy::ecs::query::QueryData;
-use bevy::prelude::*;
+use bevy::{input, prelude::*};
 
 use crate::movement::Velocity;
 use crate::shapes::ShapeAssets;
@@ -12,12 +12,19 @@ pub struct Ship {
     pub cooldown: Timer,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Transform, Visibility)]
 pub struct ShipIntent {
     pub move_input: Vec2,
     pub aim_at: Option<Vec2>,
     pub firing: bool,
+    pub braking: bool,
 }
+
+#[derive(Component)]
+struct ShipHull;
+
+#[derive(Component, Default)]
+struct Bank(f32);
 
 #[derive(QueryData)]
 #[query_data(mutable)]
@@ -109,7 +116,7 @@ fn read_input(
 
     let (forward, back) = (keys.pressed(KeyCode::KeyW), keys.pressed(KeyCode::KeyS));
     let (left, right) = (keys.pressed(KeyCode::KeyA), keys.pressed(KeyCode::KeyD));
-
+    intent.braking = keys.pressed(KeyCode::ShiftLeft);
     intent.move_input = Vec2::new(
         (right as i32 - left as i32) as f32,
         (forward as i32 - back as i32) as f32,
@@ -154,12 +161,27 @@ fn thrust(time: Res<Time>, tuning: Res<Tuning>, ship: Option<Single<ShipMotion>>
     let Some(mut ship) = ship else { return };
     let dt = time.delta_secs();
 
-    if let Some(input) = ship.intent.move_input.try_normalize() {
-        let world_dir = (ship.transform.rotation * input.extend(0.0)).truncate();
-        ship.velocity.linear += world_dir * tuning.thrust * dt;
+    let input = ship.intent.move_input;
+    let scaled = Vec2::new(
+        input.x * tuning.thrust_stafe,
+        input.y
+            * if input.y > 0.0 {
+                tuning.thrust_forward
+            } else {
+                tuning.thrust_forward
+            },
+    );
+    if scaled != Vec2::ZERO {
+        let world_accel = (ship.transform.rotation * scaled.extend(0.0)).truncate();
+        ship.velocity.linear += world_accel * dt;
     }
 
-    ship.velocity.linear *= (-tuning.drag * dt).exp();
+    let drag = if ship.intent.braking {
+        tuning.drag_base * tuning.brake_multiplier
+    } else {
+        tuning.drag_base
+    };
+    ship.velocity.linear *= (-drag * dt).exp();
     ship.velocity.linear = ship.velocity.linear.clamp_length_max(tuning.max_speed);
 }
 
