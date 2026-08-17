@@ -1,8 +1,8 @@
 use bevy::camera::Camera;
 use bevy::ecs::query::QueryData;
-use bevy::{input, prelude::*};
+use bevy::prelude::*;
 
-use crate::movement::Velocity;
+use crate::movement::{Interp, Velocity};
 use crate::shapes::ShapeAssets;
 use crate::tuning::Tuning;
 
@@ -81,6 +81,7 @@ fn spawn_ship(mut commands: Commands, shapes: Res<ShapeAssets>, tuning: Res<Tuni
         Ship {
             cooldown: ready_timer(tuning.fire_cooldown),
         },
+        Interp::default(),
         children![(
             ShipHull,
             Bank::default(),

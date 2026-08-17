@@ -1,4 +1,3 @@
-#![allow(unused_imports)]
 use bevy::prelude::*;
 
 #[derive(Resource)]
