@@ -38,7 +38,7 @@ fn build_shapes(
             Vec2::new(-r * 0.5, -r),
             Vec2::new(r * 0.5, -r),
         )),
-        bullet: meshes.add(Circle::new(tuning.bullet_radius)),
+        bullet: meshes.add(Capsule2d::new(tuning.bullet_radius)),
         ship_material: materials.add(Color::linear_rgb(0.7, 3.0, 4.5)),
         flame_material: materials.add(Color::linear_rgb(5.0, 1.6, 0.3)),
         bullet_material: materials.add(Color::linear_rgb(6.0, 4.5, 2.0)),

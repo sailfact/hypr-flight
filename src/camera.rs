@@ -23,7 +23,7 @@ type ShipQuery<'w, 's> =
     Single<'w, 's, (&'static Transform, &'static Velocity), (With<Ship>, Without<FollowCamera>)>;
 
 //--------------------------------------------
-//Components & Resources
+// Components & Resources
 //--------------------------------------------
 
 /// Smoothed camera state.

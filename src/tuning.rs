@@ -5,6 +5,7 @@ use bevy::prelude::*;
 pub struct Tuning {
     pub boost_max_speed: f32,
     pub bullet_radius: f32,
+    pub bullet_size: f32
     pub bullet_speed: f32,
     pub bullet_lifetime: f32,
     pub camera_view_height: f32,
@@ -42,7 +43,8 @@ impl Default for Tuning {
             turn_rate: 3.6,
             drag: 0.6,
             bullet_radius: 2.5,
-            bullet_speed: 620.0,
+            bullet_size: 5.0,
+            bullet_speed: 920.0,
             bullet_lifetime: 2.1,
             fire_cooldown: 0.09,
             camera_view_height: 720.0,
