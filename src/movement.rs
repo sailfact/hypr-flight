@@ -47,7 +47,7 @@ pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, interp_begin)
+        app.add_systems(FixedFirst, interp_begin)
             .add_systems(
                 FixedUpdate,
                 (integrate, wrap_positions).chain().in_set(MovementSet),
