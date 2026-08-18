@@ -2,12 +2,12 @@ use bevy::camera::Camera;
 use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
-use crate::movement::Velocity;
+use crate::movement::{Interp, Velocity};
 use crate::shapes::ShapeAssets;
 use crate::tuning::Tuning;
 
 #[derive(Component)]
-#[require(ShipIntent, Velocity)]
+#[require(ShipIntent, Velocity, Transform, Visibility)]
 pub struct Ship {
     pub cooldown: Timer,
 }
@@ -17,7 +17,14 @@ pub struct ShipIntent {
     pub move_input: Vec2,
     pub aim_at: Option<Vec2>,
     pub firing: bool,
+    pub braking: bool,
 }
+
+#[derive(Component)]
+struct ShipHull;
+
+#[derive(Component, Default)]
+struct Bank(f32);
 
 #[derive(QueryData)]
 #[query_data(mutable)]
@@ -64,7 +71,7 @@ pub struct ShipPlugin;
 impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_ship)
-            .add_systems(Update, (read_input, aim, flame_visibility))
+            .add_systems(Update, (read_input, aim, bank, flame_visibility).chain())
             .add_systems(FixedUpdate, (thrust, fire).chain().in_set(ShipSet));
     }
 }
@@ -74,15 +81,20 @@ fn spawn_ship(mut commands: Commands, shapes: Res<ShapeAssets>, tuning: Res<Tuni
         Ship {
             cooldown: ready_timer(tuning.fire_cooldown),
         },
-        Mesh2d(shapes.ship.clone()),
-        MeshMaterial2d(shapes.ship_material.clone()),
-        Transform::default(),
+        Interp::default(),
         children![(
-            ThrustFlame,
-            Mesh2d(shapes.flame.clone()),
-            MeshMaterial2d(shapes.flame_material.clone()),
+            ShipHull,
+            Bank::default(),
+            Mesh2d(shapes.ship.clone()),
+            MeshMaterial2d(shapes.ship_material.clone()),
             Transform::default(),
-            Visibility::Hidden,
+            children![(
+                ThrustFlame,
+                Mesh2d(shapes.flame.clone()),
+                MeshMaterial2d(shapes.flame_material.clone()),
+                Transform::default(),
+                Visibility::Hidden,
+            )],
         )],
     ));
 }
@@ -109,7 +121,7 @@ fn read_input(
 
     let (forward, back) = (keys.pressed(KeyCode::KeyW), keys.pressed(KeyCode::KeyS));
     let (left, right) = (keys.pressed(KeyCode::KeyA), keys.pressed(KeyCode::KeyD));
-
+    intent.braking = keys.pressed(KeyCode::ShiftLeft);
     intent.move_input = Vec2::new(
         (right as i32 - left as i32) as f32,
         (forward as i32 - back as i32) as f32,
@@ -154,13 +166,49 @@ fn thrust(time: Res<Time>, tuning: Res<Tuning>, ship: Option<Single<ShipMotion>>
     let Some(mut ship) = ship else { return };
     let dt = time.delta_secs();
 
-    if let Some(input) = ship.intent.move_input.try_normalize() {
-        let world_dir = (ship.transform.rotation * input.extend(0.0)).truncate();
-        ship.velocity.linear += world_dir * tuning.thrust * dt;
+    let input = ship.intent.move_input;
+    let scaled = Vec2::new(
+        input.x * tuning.thrust_strafe,
+        input.y
+            * if input.y > 0.0 {
+                tuning.thrust_forward
+            } else {
+                tuning.thrust_reverse
+            },
+    );
+    if scaled != Vec2::ZERO {
+        let world_accel = (ship.transform.rotation * scaled.extend(0.0)).truncate();
+        ship.velocity.linear += world_accel * dt;
     }
 
-    ship.velocity.linear *= (-tuning.drag * dt).exp();
+    let drag = if ship.intent.braking {
+        tuning.drag_base * tuning.brake_multiplier
+    } else {
+        tuning.drag_base
+    };
+    ship.velocity.linear *= (-drag * dt).exp();
     ship.velocity.linear = ship.velocity.linear.clamp_length_max(tuning.max_speed);
+}
+
+fn bank(
+    time: Res<Time>,
+    tuning: Res<Tuning>,
+    intent: Option<Single<&ShipIntent>>,
+    hull: Option<Single<(&mut Bank, &mut Transform), With<ShipHull>>>,
+) {
+    let (Some(intent), Some(hull)) = (intent, hull) else {
+        return;
+    };
+    let (mut bank, mut transform) = hull.into_inner();
+
+    let target = -intent.move_input.x * tuning.max_bank;
+    // Exponential smoothing rather than a raw lerp factor, same reasoning as
+    // §6.2 and §8 — otherwise bank speed tracks framerate.
+    let t = 1.0 - (-tuning.bank_rate * time.delta_secs()).exp();
+    bank.0 += (target - bank.0) * t;
+
+    transform.rotation = Quat::from_rotation_z(bank.0);
+    transform.scale.x = 1.0 - (bank.0.abs() / tuning.max_bank) * tuning.bank_squash;
 }
 
 fn flame_visibility(
