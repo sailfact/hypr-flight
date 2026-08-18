@@ -10,12 +10,17 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+
             - name: Install Bevy Linux dependencies
               run: |
                 sudo apt-get update && sudo apt-get install -y \
+                pkg-config \
                 libasound2-dev libudev-dev \
                 libwayland-dev libxkbcommon-dev \
                 libx11-dev libxi-dev libgl1-mesa-dev
+
+            - name: Fix pkg-config search path
+              run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> "$GITHUB_ENV"
 
             - uses: dtolnay/rust-toolchain@stable
               with:
