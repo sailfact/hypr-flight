@@ -7,7 +7,7 @@ use rand::RngExt;
 // brightness   : intensity of the starts in the layer
 
 const LAYERS: [(u32, f32, f32, f32, f32); 3] = [
-// [(star_count), (parallax), (z), (radius), (brightness), ; number_of_layers]
+    // star_count, parallax, z, radius, brightness
     (280, 0.12, -100.0, 1.2, 0.30),
     (180, 0.30, -99.0, 1.8, 0.55),
     (00, 0.55, -98.0, 2.6, 0.75),
