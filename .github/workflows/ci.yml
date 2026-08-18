@@ -1,36 +1,69 @@
 name: CI
+
 on:
-    pull_request:
-        branches: [develop, main]
-    push:
-        branches: [develop, main]
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-    check:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - name: Debug wayland pkg-config
-              run: |
-                    echo "--- installed wayland packages ---"
-                    dpkg -l | grep -i wayland || echo "NONE INSTALLED"
-                    echo "--- .pc files on disk ---"
-                    find / -name "wayland-client.pc" 2>/dev/null || echo "NOT ON DISK"
-                    echo "--- pkg-config default search path ---"
-                    pkg-config --variable pc_path pkg-config
-                    echo "--- current env ---"
-                    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-                    echo "PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR"
+  lint:
+    name: Format and Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Fix pkg-config search path
-              run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> "$GITHUB_ENV"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
-            - uses: dtolnay/rust-toolchain@stable
-              with:
-                components: clippy, rustfmt
+      - name: Install Bevy system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
 
-            - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
 
-            - run: cargo fmt --check
-            - run: cargo clippy --all-targets --all-features -- -D warnings
-            - run: cargo test --all-features
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Bevy system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --all-targets
+
+      - name: Test
+        run: cargo test --all-features
