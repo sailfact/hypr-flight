@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Design spec
+    url: https://github.com/sailfact/hypr-flight/blob/develop/galakz-prototype-spec.md
+    about: Read §2 (scope) and §3 (success criteria) before filing a feature request.

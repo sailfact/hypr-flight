@@ -1,0 +1,29 @@
+name: CI
+on:
+    pull_request:
+        branches: [develop, main]
+    push:
+        branches: [develop, main]
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install Bevy Linux dependencies
+              run: |
+                sudo apt-get update
+                sudo apt-get update -y \
+                  libasound2-dev libudev-dev \
+                  libwayland-dev libxkbcommon-dev \
+                  libx11-dev libxi-dev libgl1-mesa-dev
+
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                components: clippy, rustfmt
+
+            - uses: Swatinem/rust-cache@v2
+
+            - run: cargo fmt --check
+            - run: cargo clippy --all-targets --all-features -- -D warnings
+            - run: cargo test --all-features
