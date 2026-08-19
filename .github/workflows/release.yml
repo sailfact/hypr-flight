@@ -2,12 +2,8 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v*.*.*']
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to build (e.g. v0.1.0)'
-        required: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -18,8 +14,6 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -34,75 +28,95 @@ jobs:
             target: aarch64-apple-darwin
             archive: tar.gz
 
+    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Install Bevy system dependencies
+      - name: Install Bevy Linux dependencies
         if: runner.os == 'Linux'
         run: |
+          set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+            pkg-config \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libgl1-mesa-dev
+
+      - name: Verify wayland is discoverable
+        if: runner.os == 'Linux'
+        run: |
+          set -euxo pipefail
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig" >> "$GITHUB_ENV"
+          export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig
+          pkg-config --modversion wayland-client
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
 
-      - name: Build release binary
+      - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package (Unix)
         if: runner.os != 'Windows'
         run: |
-          STAGING="${BINARY_NAME}-${{ matrix.target }}"
-          mkdir -p "$STAGING"
-          cp "target/${{ matrix.target }}/release/${BINARY_NAME}" "$STAGING/"
-          [ -f README.md ] && cp README.md "$STAGING/"
-          [ -d assets ] && cp -r assets "$STAGING/"
-          tar czf "${STAGING}.tar.gz" "$STAGING"
-          echo "ASSET=${STAGING}.tar.gz" >> "$GITHUB_ENV"
+          set -euxo pipefail
+          STAGE="${BINARY_NAME}-${{ matrix.target }}"
+          mkdir -p "$STAGE"
+          cp "target/${{ matrix.target }}/release/${BINARY_NAME}" "$STAGE/"
+          if [ -d assets ]; then cp -r assets "$STAGE/"; fi
+          tar -czf "${STAGE}.tar.gz" "$STAGE"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $staging = "$env:BINARY_NAME-${{ matrix.target }}"
-          New-Item -ItemType Directory -Path $staging | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/$env:BINARY_NAME.exe" $staging
-          if (Test-Path README.md) { Copy-Item README.md $staging }
-          if (Test-Path assets) { Copy-Item -Recurse assets $staging }
-          Compress-Archive -Path $staging -DestinationPath "$staging.zip"
-          "ASSET=$staging.zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $ErrorActionPreference = 'Stop'
+          $stage = "$env:BINARY_NAME-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/$env:BINARY_NAME.exe" $stage
+          if (Test-Path assets) { Copy-Item -Recurse assets $stage }
+          Compress-Archive -Path $stage -DestinationPath "$stage.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
-          path: ${{ env.ASSET }}
-          if-no-files-found: error
+          name: ${{ env.BINARY_NAME }}-${{ matrix.target }}
+          path: |
+            *.tar.gz
+            *.zip
 
   release:
-    name: Publish release
     needs: build
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
 
-      - name: Create GitHub release
+      - name: List artifacts
+        run: ls -la dist
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          draft: true
-          generate_release_notes: true
           files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
