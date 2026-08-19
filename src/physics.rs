@@ -1,4 +1,56 @@
+use bevy::prelude::*;
+
 use crate::level::Level;
+use crate::movement::{Collider, Velocity};
+use crate::projectile::Bullet;
+use crate::tuning::Tuning;
+
+/// Entities that resolve against level geometry rather than integrating
+/// plainly. Bullets deliberately do not have this — they carry a `Collider`
+/// for entity-vs-entity contact but despawn on walls instead of bouncing.
+#[derive(Component)]
+pub struct WallCollision;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PhysicsSet {
+    /// Runs after all thrust, drag and steering for the frame.
+    Step,
+}
+
+pub struct PhysicsPlugin;
+
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            FixedUpdate,
+            (step_bodies, despawn_bullets_in_walls).in_set(PhysicsSet::Step),
+        );
+    }
+}
+
+fn step_bodies(
+    level: Res<Level>,
+    tuning: Res<Tuning>,
+    time: Res<Time>,
+    mut bodies: Query<(&mut Transform, &mut Velocity, &Collider), With<WallCollision>>,
+) {
+    let dt = time.delta_secs();
+    for (mut transform, mut velocity, collider) in &mut bodies {
+        let (position, resolved) = step_body(
+            &level,
+            transform.translation.truncate(),
+            velocity.0,
+            collider.radius,
+            dt,
+            tuning.wall_restitution,
+            tuning.wall_friction,
+        );
+        transform.translation.x = position.x;
+        transform.translation.y = position.y;
+        velocity.0 = resolved;
+    }
+}
+
 /// How many equal substeps this frame's displacement must be split into so
 /// that no single step moves further than half a tile (spec §7.2). Splitting
 /// this way makes tunnelling impossible without a continuous-collision system.
@@ -106,4 +158,40 @@ pub fn resolve_at(
     }
 
     (position, velocity)
+}
+
+/// Advance one body through a whole fixed step, resolving after each substep.
+pub fn step_body(
+    level: &Level,
+    mut position: Vec2,
+    mut velocity: Vec2,
+    radius: f32,
+    dt: f32,
+    restitution: f32,
+    friction: f32,
+) -> (Vec2, Vec2) {
+    let steps = substep_count(velocity.length(), dt, level.tile_size());
+    let sub_dt = dt / steps as f32;
+
+    for _ in 0..steps {
+        position += velocity * sub_dt;
+        let resolved = resolve_at(level, position, velocity, radius, restitution, friction);
+        position = resolved.0;
+        velocity = resolved.1;
+    }
+
+    (position, velocity)
+}
+
+fn despawn_bullets_in_walls(
+    mut commands: Commands,
+    level: Res<Level>,
+    bullets: Query<(Entity, &Transform), With<Bullet>>,
+) {
+    for (entity, transform) in &bullets {
+        let tile = level.world_to_tile(transform.translation.truncate());
+        if level.is_solid(tile) {
+            commands.entity(entity).despawn();
+        }
+    }
 }
