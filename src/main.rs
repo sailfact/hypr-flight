@@ -3,6 +3,7 @@ use bevy::window::WindowResolution;
 
 mod background;
 mod camera;
+mod level;
 mod movement;
 mod projectile;
 mod shapes;
