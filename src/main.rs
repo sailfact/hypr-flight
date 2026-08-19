@@ -5,6 +5,7 @@ mod background;
 mod camera;
 mod level;
 mod movement;
+mod physics;
 mod projectile;
 mod shapes;
 mod ship;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::level::*;
+use crate::level;
 use crate::tuning::Tuning;
 
 #[derive(Resource)]

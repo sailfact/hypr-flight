@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::shapes::ShapeAssets;
+
 /// `Level` owns this; `Tuning` must not duplicate it.
 pub const TILE_SIZE: f32 = 32.0;
 
@@ -173,12 +175,6 @@ impl Level {
     }
 }
 
-pub struct LevelPlugin;
-
-impl Plugin for LevelPlugin {
-    fn build(&self, app: &mut App) {}
-}
-
 /// 80 x 50. `#` solid, `.` open. Written top-down: the first line is the
 /// highest y. Every corridor is 3 tiles wide (96 units).
 pub const LEVEL_ASCII: &str = "\
@@ -232,3 +228,36 @@ pub const LEVEL_ASCII: &str = "\
 ################################################################################
 ################################################################################
 ################################################################################";
+
+pub struct LevelPlugin;
+
+impl Plugin for LevelPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(PreStartup, build_level)
+            .add_systems(Startup, spawn_wall_tiles);
+    }
+}
+
+fn build_level(mut commands: Commands) {
+    commands.insert_resource(Level::from_ascii(LEVEL_ASCII, TILE_SIZE));
+}
+
+/// One quad entity per solid tile. A few thousand entities that batch to a
+/// single draw call — adequate at prototype scale (spec §7.1).
+fn spawn_wall_tiles(mut commands: Commands, level: Res<Level>, shapes: Res<ShapeAssets>) {
+    for y in 0..level.height() as i32 {
+        for x in 0..level.width() as i32 {
+            let tile = IVec2::new(x, y);
+            if !level.is_solid(tile) {
+                continue;
+            }
+            let centre = level.tile_center(tile);
+            commands.spawn((
+                Wall,
+                Mesh2d(shapes.tile_mesh.clone()),
+                MeshMaterial2d(shapes.tile_material.clone()),
+                Transform::from_xyz(centre.x, centre.y, 0.0),
+            ));
+        }
+    }
+}
