@@ -2,10 +2,10 @@ use bevy::prelude::*;
 
 use crate::shapes::ShapeAssets;
 
-/// `Level` owns this; `Tuning` must not duplicate it.
+/// Spec section 11. `Level` owns this; `Tuning` must not duplicate it.
 pub const TILE_SIZE: f32 = 32.0;
 
-/// Where the ship spawns, and where it respawns after death
+/// Where the ship spawns, and respawns after death (spec section 10).
 pub const START_TILE: IVec2 = IVec2::new(7, 7);
 
 /// Marker for a rendered solid tile.
@@ -27,8 +27,8 @@ impl Level {
     /// Parse a level from ASCII. `#` is solid, `.` is open.
     ///
     /// The string is written top-down for readability: the FIRST line is the
-    /// highest y, and the LAST line is y = 0. Blank lines are ignored so the
-    /// const can be indented in source.
+    /// highest y, the LAST line is y = 0. Blank lines are ignored so the const
+    /// can be indented in source.
     pub fn from_ascii(src: &str, tile_size: f32) -> Self {
         let rows: Vec<&str> = src
             .lines()
@@ -59,18 +59,6 @@ impl Level {
             tile_size,
         }
     }
-    /// Anything outside the grid counts as solid, so callers never need a
-    /// separate bounds check.
-    pub fn is_solid(&self, tile: IVec2) -> bool {
-        let (x, y) = (tile.x as usize, tile.y as usize);
-        if tile.x < 0 || tile.y < 0 {
-            return true;
-        }
-        if x >= self.width || y >= self.height {
-            return true;
-        }
-        self.solid[y * self.width + x]
-    }
 
     pub fn width(&self) -> usize {
         self.width
@@ -84,6 +72,21 @@ impl Level {
         self.tile_size
     }
 
+    /// Anything outside the grid counts as solid, so callers never need a
+    /// separate bounds check.
+    pub fn is_solid(&self, tile: IVec2) -> bool {
+        if tile.x < 0 || tile.y < 0 {
+            return true;
+        }
+        let (x, y) = (tile.x as usize, tile.y as usize);
+        if x >= self.width || y >= self.height {
+            return true;
+        }
+        self.solid[y * self.width + x]
+    }
+
+    /// Which tile contains this world point. Uses `floor`, so negative
+    /// coordinates map outside the grid rather than folding onto tile 0.
     pub fn world_to_tile(&self, point: Vec2) -> IVec2 {
         IVec2::new(
             (point.x / self.tile_size).floor() as i32,
@@ -91,6 +94,7 @@ impl Level {
         )
     }
 
+    /// World-space centre of a tile. Used for spawning and rendering.
     pub fn tile_center(&self, tile: IVec2) -> Vec2 {
         Vec2::new(
             (tile.x as f32 + 0.5) * self.tile_size,
@@ -175,6 +179,40 @@ impl Level {
     }
 }
 
+pub struct LevelPlugin;
+
+impl Plugin for LevelPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(PreStartup, build_level)
+            .add_systems(Startup, spawn_wall_tiles);
+    }
+}
+
+/// Spec section 7.1: built at `PreStartup` so every `Startup` system can read it.
+fn build_level(mut commands: Commands) {
+    commands.insert_resource(Level::from_ascii(LEVEL_ASCII, TILE_SIZE));
+}
+
+/// One quad entity per solid tile. A few thousand entities that batch to a
+/// single draw call — adequate at prototype scale (spec section 7.1).
+fn spawn_wall_tiles(mut commands: Commands, level: Res<Level>, shapes: Res<ShapeAssets>) {
+    for y in 0..level.height() as i32 {
+        for x in 0..level.width() as i32 {
+            let tile = IVec2::new(x, y);
+            if !level.is_solid(tile) {
+                continue;
+            }
+            let centre = level.tile_center(tile);
+            commands.spawn((
+                Wall,
+                Mesh2d(shapes.tile_mesh.clone()),
+                MeshMaterial2d(shapes.tile_material.clone()),
+                Transform::from_xyz(centre.x, centre.y, -1.0),
+            ));
+        }
+    }
+}
+
 /// 80 x 50. `#` solid, `.` open. Written top-down: the first line is the
 /// highest y. Every corridor is 3 tiles wide (96 units).
 pub const LEVEL_ASCII: &str = "\
@@ -228,36 +266,3 @@ pub const LEVEL_ASCII: &str = "\
 ################################################################################
 ################################################################################
 ################################################################################";
-
-pub struct LevelPlugin;
-
-impl Plugin for LevelPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, build_level)
-            .add_systems(Startup, spawn_wall_tiles);
-    }
-}
-
-fn build_level(mut commands: Commands) {
-    commands.insert_resource(Level::from_ascii(LEVEL_ASCII, TILE_SIZE));
-}
-
-/// One quad entity per solid tile. A few thousand entities that batch to a
-/// single draw call — adequate at prototype scale (spec §7.1).
-fn spawn_wall_tiles(mut commands: Commands, level: Res<Level>, shapes: Res<ShapeAssets>) {
-    for y in 0..level.height() as i32 {
-        for x in 0..level.width() as i32 {
-            let tile = IVec2::new(x, y);
-            if !level.is_solid(tile) {
-                continue;
-            }
-            let centre = level.tile_center(tile);
-            commands.spawn((
-                Wall,
-                Mesh2d(shapes.tile_mesh.clone()),
-                MeshMaterial2d(shapes.tile_material.clone()),
-                Transform::from_xyz(centre.x, centre.y, 0.0),
-            ));
-        }
-    }
-}

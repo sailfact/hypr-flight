@@ -3,7 +3,7 @@ use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
 use crate::level::*;
-use crate::movement::{Interp, Velocity};
+use crate::movement::{Collider, Interp, Velocity, WallCollision};
 use crate::shapes::ShapeAssets;
 use crate::tuning::Tuning;
 

@@ -17,11 +17,12 @@ pub struct Wrap;
 pub struct MovementSet;
 
 #[derive(Component, Default)]
-#[allow(dead_code)]
 pub struct Collider {
-    // Used when we add physics
     pub radius: f32,
 }
+
+#[derive(Component, Default)]
+pub struct WallCollision;
 
 #[derive(Component, Default)]
 pub struct Interp {

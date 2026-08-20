@@ -1,21 +1,12 @@
 use bevy::prelude::*;
 
 use crate::level::Level;
-use crate::movement::{Collider, Velocity};
+use crate::movement::{Collider, Velocity, WallCollision};
 use crate::projectile::Bullet;
 use crate::tuning::Tuning;
 
-/// Entities that resolve against level geometry rather than integrating
-/// plainly. Bullets deliberately do not have this — they carry a `Collider`
-/// for entity-vs-entity contact but despawn on walls instead of bouncing.
-#[derive(Component)]
-pub struct WallCollision;
-
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PhysicsSet {
-    /// Runs after all thrust, drag and steering for the frame.
-    Step,
-}
+pub struct PhysicsSet;
 
 pub struct PhysicsPlugin;
 
@@ -23,36 +14,13 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (step_bodies, despawn_bullets_in_walls).in_set(PhysicsSet::Step),
+            (step_bodies, despawn_bullets_in_walls).in_set(PhysicsSet),
         );
-    }
-}
-
-fn step_bodies(
-    level: Res<Level>,
-    tuning: Res<Tuning>,
-    time: Res<Time>,
-    mut bodies: Query<(&mut Transform, &mut Velocity, &Collider), With<WallCollision>>,
-) {
-    let dt = time.delta_secs();
-    for (mut transform, mut velocity, collider) in &mut bodies {
-        let (position, resolved) = step_body(
-            &level,
-            transform.translation.truncate(),
-            velocity.0,
-            collider.radius,
-            dt,
-            tuning.wall_restitution,
-            tuning.wall_friction,
-        );
-        transform.translation.x = position.x;
-        transform.translation.y = position.y;
-        velocity.0 = resolved;
     }
 }
 
 /// How many equal substeps this frame's displacement must be split into so
-/// that no single step moves further than half a tile (spec §7.2). Splitting
+/// that no single step moves further than half a tile (spec section 7.2). Splitting
 /// this way makes tunnelling impossible without a continuous-collision system.
 ///
 /// Always at least 1: a stationary body still needs one resolution pass, or it
@@ -118,7 +86,7 @@ pub fn circle_tile_overlap(
 ///
 /// Candidates are the tiles covering the circle's AABB — at most four for a
 /// radius under one tile. Each is resolved in sequence, which is wrong in
-/// corners and can jitter when wedged into a concave angle (spec §7.2).
+/// corners and can jitter when wedged into a concave angle (spec section 7.2).
 /// Accepted for the prototype.
 pub fn resolve_at(
     level: &Level,
@@ -183,6 +151,31 @@ pub fn step_body(
     (position, velocity)
 }
 
+fn step_bodies(
+    level: Res<Level>,
+    tuning: Res<Tuning>,
+    time: Res<Time>,
+    mut bodies: Query<(&mut Transform, &mut Velocity, &Collider), With<WallCollision>>,
+) {
+    let dt = time.delta_secs();
+    for (mut transform, mut velocity, collider) in &mut bodies {
+        let (position, resolved) = step_body(
+            &level,
+            transform.translation.truncate(),
+            velocity.linear,
+            collider.radius,
+            dt,
+            tuning.wall_restitution,
+            tuning.wall_friction,
+        );
+        transform.translation.x = position.x;
+        transform.translation.y = position.y;
+        velocity.linear = resolved;
+    }
+}
+
+/// Spec section 7.2: bullets integrate plainly and despawn on contact with any solid
+/// tile, via a single point-in-tile test.
 fn despawn_bullets_in_walls(
     mut commands: Commands,
     level: Res<Level>,
