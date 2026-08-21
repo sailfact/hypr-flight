@@ -88,6 +88,10 @@ fn spawn_ship(
         Ship {
             cooldown: ready_timer(tuning.fire_cooldown),
         },
+        Collider {
+            radius: tuning.ship_radius,
+        },
+        WallCollision,
         Transform::from_translation(start.extend(0.0)),
         Interp::at(start),
         children![(

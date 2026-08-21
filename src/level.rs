@@ -107,6 +107,7 @@ impl Level {
     /// Amanatides-Woo grid traversal: step to whichever axis boundary is
     /// nearer, test that tile, repeat until the accumulated distance exceeds
     /// the segment length. Endpoints inside a solid tile count as blocked.
+    #[allow(dead_code)]
     pub fn line_of_sight(&self, from: Vec2, to: Vec2) -> bool {
         let mut tile = self.world_to_tile(from);
         if self.is_solid(tile) {

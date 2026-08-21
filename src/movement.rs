@@ -64,7 +64,10 @@ impl Plugin for MovementPlugin {
 //---------------------------------
 // Systems
 //---------------------------------
-fn integrate(time: Res<Time>, mut movers: Query<(&mut Transform, &Velocity)>) {
+fn integrate(
+    time: Res<Time>,
+    mut movers: Query<(&mut Transform, &Velocity), Without<WallCollision>>,
+) {
     let dt = time.delta_secs();
     for (mut transform, velocity) in &mut movers {
         transform.translation += (velocity.linear * dt).extend(0.0);
