@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::level;
 use crate::tuning::Tuning;
 
 #[derive(Resource)]
@@ -10,6 +11,8 @@ pub struct ShapeAssets {
     pub ship_material: Handle<ColorMaterial>,
     pub flame_material: Handle<ColorMaterial>,
     pub bullet_material: Handle<ColorMaterial>,
+    pub tile_mesh: Handle<Mesh>,
+    pub tile_material: Handle<ColorMaterial>,
 }
 
 pub struct ShapesPlugin;
@@ -42,5 +45,7 @@ fn build_shapes(
         ship_material: materials.add(Color::linear_rgb(0.7, 3.0, 4.5)),
         flame_material: materials.add(Color::linear_rgb(5.0, 1.6, 0.3)),
         bullet_material: materials.add(Color::linear_rgb(6.0, 4.5, 2.0)),
+        tile_mesh: meshes.add(Rectangle::new(level::TILE_SIZE, level::TILE_SIZE)),
+        tile_material: materials.add(Color::linear_rgb(0.10, 0.12, 0.18)),
     });
 }

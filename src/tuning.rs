@@ -31,6 +31,8 @@ pub struct Tuning {
     pub bank_squash: f32,
     pub trauma_decay: f32,
     pub turn_rate: f32,
+    pub wall_restitution: f32,
+    pub wall_friction: f32,
 }
 
 impl Default for Tuning {
@@ -65,6 +67,8 @@ impl Default for Tuning {
             max_bank: 0.35,
             bank_rate: 8.0,
             bank_squash: 0.4,
+            wall_restitution: 0.4,
+            wall_friction: 0.5,
         }
     }
 }

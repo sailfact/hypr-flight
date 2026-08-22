@@ -3,7 +3,9 @@ use bevy::window::WindowResolution;
 
 mod background;
 mod camera;
+mod level;
 mod movement;
+mod physics;
 mod projectile;
 mod shapes;
 mod ship;
@@ -23,12 +25,17 @@ fn main() {
         .init_resource::<tuning::Tuning>()
         .add_plugins((
             shapes::ShapesPlugin,
+            level::LevelPlugin,
             movement::MovementPlugin,
             ship::ShipPlugin,
             projectile::ProjectilePlugin,
             background::BackgroundPlugin,
             camera::CameraPlugin,
+            physics::PhysicsPlugin,
         ))
-        .configure_sets(FixedUpdate, ship::ShipSet.before(movement::MovementSet))
+        .configure_sets(
+            FixedUpdate,
+            (movement::MovementSet, ship::ShipSet, physics::PhysicsSet).chain(),
+        )
         .run();
 }
