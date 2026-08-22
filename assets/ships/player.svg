@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+
+
+  <!-- engine nacelle -->
+  <polygon points="54,96 74,96 73,100 55,100" fill="#A4243B"/>
+
+  <!-- fuselage -->
+  <polygon points="60,20 68,20 76,48 74,96 54,96 52,48" fill="#d3e8ff"/>
+
+  <!-- nose stripe -->
+  <polygon points="62,20 66,20 68,33 60,33" fill="#A4243B"/>
+
+  <!-- tail stripe -->
+  <polygon points="64, 96 68,55 60,55" fill="#A4243B"/>
+
+  <!-- canopy -->
+  <ellipse cx="64" cy="44" rx="7" ry="14" fill="#001c22"/>
+
+  <!-- missles -->
+  <polygon points="34,60 30,60 30,72 34,68" fill="#A4243B"/>
+  <polygon points="94,60 98,60 98,72 94,68" fill="#A4243B"/>
+
+  <!-- wings -->
+  <polygon points="52,48 18,84 25,98 54,96" fill="#273E47"/>
+  <polygon points="76,48 110,84 104,98 74,96" fill="#273E47"/>
+
+</svg>
