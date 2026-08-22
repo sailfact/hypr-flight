@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
+mod asteroids;
 mod background;
 mod camera;
 mod level;
