@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::shapes::ShapeAssets;
 
 /// Spec section 11. `Level` owns this; `Tuning` must not duplicate it.
-pub const TILE_SIZE: f32 = 32.0;
+pub const TILE_SIZE: f32 = 128.0;
 
 /// Where the ship spawns, and respawns after death (spec section 10).
 pub const START_TILE: IVec2 = IVec2::new(7, 7);
