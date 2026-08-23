@@ -34,6 +34,8 @@ fn main() {
             background::BackgroundPlugin,
             camera::CameraPlugin,
             physics::PhysicsPlugin,
+            combat::CombatPlugin,
+            asteroid::AsteroidPlugin,
         ))
         .configure_sets(
             FixedUpdate,

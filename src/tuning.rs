@@ -78,7 +78,7 @@ impl Default for Tuning {
             wall_friction: 0.5,
             player_health: 3,
             asteroid_wave_interval: 6.0,
-            asteroid_wave_count: 2,
+            asteroid_wave_count: 20,
             asteroid_spawn_clearance: 400.0,
             asteroid_min_speed: 40.0,
             asteroid_max_speed: 120.0,

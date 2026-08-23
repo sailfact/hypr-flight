@@ -94,32 +94,20 @@ fn bullet_damage(
     }
 }
 
-/// Ship-vs-asteroid: the ship takes damage and bounces, the asteroid is
-/// unaffected. `physics.rs` is circle-vs-tile only, so the bounce is resolved
-/// here — the asteroid acts as a moving wall that happens to hurt.
 fn ship_vs_asteroids(
     time: Res<Time>,
     tuning: Res<Tuning>,
-    mut ships: Query<
-        (
-            &mut Transform,
-            &mut Velocity,
-            &Collider,
-            &mut Health,
-            &mut ContactCooldown,
-        ),
-        With<Ship>,
-    >,
+    mut ships: Query<ShipBody, With<Ship>>,
     asteroids: Query<(&Transform, &Collider), (With<Asteroid>, Without<Ship>)>,
 ) {
-    for (mut transform, mut velocity, collider, mut health, mut cooldown) in &mut ships {
-        cooldown.0.tick(time.delta());
+    for mut ship in &mut ships {
+        ship.cooldown.0.tick(time.delta());
 
-        let mut position = transform.translation.truncate();
+        let mut position = ship.transform.translation.truncate();
 
         for (asteroid_transform, asteroid_collider) in &asteroids {
             let asteroid_position = asteroid_transform.translation.truncate();
-            let reach = collider.radius + asteroid_collider.radius;
+            let reach = ship.collider.radius + asteroid_collider.radius;
 
             let offset = position - asteroid_position;
             let distance_squared = offset.length_squared();
@@ -138,49 +126,40 @@ fn ship_vs_asteroids(
             };
             position += normal * (reach - distance);
 
-            let closing = velocity.linear.dot(normal);
+            let closing = ship.velocity.linear.dot(normal);
             if closing < 0.0 {
-                velocity.linear -= (1.0 + tuning.wall_restitution) * closing * normal;
+                ship.velocity.linear -= (1.0 + tuning.wall_restitution) * closing * normal;
             }
 
-            if cooldown.0.is_finished() {
-                health.0 = health.0.saturating_sub(1);
-                cooldown.0.reset();
+            if ship.cooldown.0.is_finished() {
+                ship.health.0 = ship.health.0.saturating_sub(1);
+                ship.cooldown.0.reset();
             }
         }
 
-        transform.translation.x = position.x;
-        transform.translation.y = position.y;
+        ship.transform.translation.x = position.x;
+        ship.transform.translation.y = position.y;
     }
 }
-
-/// Health at zero: asteroids split, the ship respawns at the level start.
 fn despawn_dead(
     mut commands: Commands,
     shapes: Res<ShapeAssets>,
     tuning: Res<Tuning>,
     level: Res<Level>,
-    dead: Query<(
-        Entity,
-        &Health,
-        &Transform,
-        &Velocity,
-        Option<&Asteroid>,
-        Option<&Ship>,
-    )>,
+    dead: Query<DeadCandidate>,
 ) {
-    for (entity, health, transform, velocity, asteroid, ship) in &dead {
-        if health.0 > 0 {
+    for candidate in &dead {
+        if candidate.health.0 > 0 {
             continue;
         }
-        let position = transform.translation.truncate();
+        let position = candidate.transform.translation.truncate();
+        let velocity = candidate.velocity.linear;
 
-        if let Some(asteroid) = asteroid {
+        if let Some(asteroid) = candidate.asteroid {
             if let Some(smaller) = asteroid.size.split() {
                 // Two fragments, thrown perpendicular to the parent's travel so
                 // they visibly separate instead of stacking.
-                let sideways =
-                    velocity.linear.perp().normalize_or(Vec2::X) * tuning.asteroid_split_speed;
+                let sideways = velocity.perp().normalize_or(Vec2::X);
                 let gap = smaller.radius() * 1.1;
 
                 for sign in [-1.0, 1.0] {
@@ -188,21 +167,21 @@ fn despawn_dead(
                         &mut commands,
                         &shapes,
                         smaller,
-                        position + sideways.normalize_or(Vec2::X) * gap * sign,
-                        velocity.linear + sideways * sign,
+                        position + sideways * gap * sign,
+                        velocity + sideways * tuning.asteroid_split_speed * sign,
                     );
                 }
             }
-            commands.entity(entity).despawn();
+            commands.entity(candidate.entity).despawn();
             continue;
         }
 
-        if ship.is_some() {
+        if candidate.ship.is_some() {
             // Spec section 10: respawn at the start point with no
             // invulnerability. Reusing the entity avoids rebuilding the child
             // hierarchy.
             let start = level.start_position();
-            commands.entity(entity).insert((
+            commands.entity(candidate.entity).insert((
                 Health(tuning.player_health),
                 Transform::from_translation(start.extend(0.0)),
                 Interp::at(start),
@@ -211,6 +190,6 @@ fn despawn_dead(
             continue;
         }
 
-        commands.entity(entity).despawn();
+        commands.entity(candidate.entity).despawn();
     }
 }

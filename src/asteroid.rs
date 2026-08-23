@@ -32,9 +32,9 @@ impl AsteroidSize {
     /// interesting outcome. Anything at 24 or above is a cork.
     pub fn radius(self) -> f32 {
         match self {
-            Self::Small => 6.0,
-            Self::Medium => 11.0,
-            Self::Large => 18.0,
+            Self::Small => 20.0,
+            Self::Medium => 60.0,
+            Self::Large => 120.0,
         }
     }
 
@@ -66,7 +66,7 @@ impl AsteroidSize {
 /// success criterion 5 vetoes. Rocks reach corridors by drifting into them,
 /// which the player can see coming.
 #[derive(Resource)]
-pub struct SpawnZones(Vec<IVec2>);
+pub struct SpawnZones(Vec<Vec2>);
 
 #[derive(Resource)]
 pub struct WaveTimer(Timer);
@@ -120,7 +120,7 @@ fn build_spawn_zones(mut commands: Commands, level: Res<Level>, tuning: Res<Tuni
             let clear =
                 (-2..=2).all(|dy| (-2..=2).all(|dx| !level.is_solid(IVec2::new(x + dx, y + dy))));
             if clear {
-                zones.push(IVec2::new(x, y));
+                zones.push(level.tile_center(IVec2::new(x, y)));
             }
         }
     }
@@ -141,7 +141,6 @@ fn build_spawn_zones(mut commands: Commands, level: Res<Level>, tuning: Res<Tuni
 fn spawn_waves(
     time: Res<Time>,
     tuning: Res<Tuning>,
-    level: Res<Level>,
     shapes: Res<ShapeAssets>,
     zones: Res<SpawnZones>,
     mut timer: ResMut<WaveTimer>,
@@ -160,8 +159,7 @@ fn spawn_waves(
         // retry a few times before giving up on this one.
         let mut placed = None;
         for _ in 0..16 {
-            let tile = zones.0[rng.random_range(0..zones.0.len())];
-            let position = level.tile_center(tile);
+            let position = zones.0[rng.random_range(0..zones.0.len())];
 
             let too_close = ship_position.is_some_and(|ship| {
                 position.distance_squared(ship)
