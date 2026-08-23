@@ -6,14 +6,14 @@ use crate::shapes::ShapeAssets;
 pub const TILE_SIZE: f32 = 128.0;
 
 /// Where the ship spawns, and respawns after death (spec section 10).
-pub const START_TILE: IVec2 = IVec2::new(7, 7);
+pub const START_TILE: IVec2 = IVec2::new(50, 10);
 
 // pub struct LevelDef {
 //     pub name: &'static str,
 //     pub ascii: &'static str,
 // }
 
-pub const LEVEL: &str = include_str!("../levels/space_test");
+pub const LEVEL: &str = include_str!("../levels/sandbox");
 
 /// Marker for a rendered solid tile.
 #[derive(Component)]

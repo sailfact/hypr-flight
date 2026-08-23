@@ -33,6 +33,13 @@ pub struct Tuning {
     pub turn_rate: f32,
     pub wall_restitution: f32,
     pub wall_friction: f32,
+    pub player_health: u32,
+    pub asteroid_wave_interval: f32,
+    pub asteroid_wave_count: i32,
+    pub asteroid_spawn_clearance: f32,
+    pub asteroid_min_speed: f32,
+    pub asteroid_max_speed: f32,
+    pub asteroid_split_speed: f32,
 }
 
 impl Default for Tuning {
@@ -69,6 +76,13 @@ impl Default for Tuning {
             bank_squash: 0.4,
             wall_restitution: 0.4,
             wall_friction: 0.5,
+            player_health: 3,
+            asteroid_wave_interval: 6.0,
+            asteroid_wave_count: 2,
+            asteroid_spawn_clearance: 400.0,
+            asteroid_min_speed: 40.0,
+            asteroid_max_speed: 120.0,
+            asteroid_split_speed: 60.0,
         }
     }
 }

@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
-mod asteroids;
+mod asteroid;
 mod background;
 mod camera;
+mod combat;
 mod level;
 mod movement;
 mod physics;
@@ -36,7 +37,13 @@ fn main() {
         ))
         .configure_sets(
             FixedUpdate,
-            (movement::MovementSet, ship::ShipSet, physics::PhysicsSet).chain(),
+            (
+                movement::MovementSet,
+                ship::ShipSet,
+                physics::PhysicsSet,
+                combat::CombatSet,
+            )
+                .chain(),
         )
         .run();
 }
