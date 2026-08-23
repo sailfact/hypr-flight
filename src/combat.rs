@@ -41,6 +41,14 @@ struct ShipBody {
 }
 
 #[derive(QueryData)]
+struct AsteroidBody {
+    transform: &'static Transform,
+    collider: &'static Collider,
+}
+
+type AsteroidFilter = (With<Asteroid>, Without<Ship>);
+
+#[derive(QueryData)]
 struct DeadCandidate {
     entity: Entity,
     health: &'static Health,
@@ -98,16 +106,15 @@ fn ship_vs_asteroids(
     time: Res<Time>,
     tuning: Res<Tuning>,
     mut ships: Query<ShipBody, With<Ship>>,
-    asteroids: Query<(&Transform, &Collider), (With<Asteroid>, Without<Ship>)>,
+    asteroids: Query<AsteroidBody, AsteroidFilter>,
 ) {
     for mut ship in &mut ships {
         ship.cooldown.0.tick(time.delta());
 
         let mut position = ship.transform.translation.truncate();
-
-        for (asteroid_transform, asteroid_collider) in &asteroids {
-            let asteroid_position = asteroid_transform.translation.truncate();
-            let reach = ship.collider.radius + asteroid_collider.radius;
+        for asteroid in &asteroids {
+            let asteroid_position = asteroid.transform.translation.truncate();
+            let reach = ship.collider.radius + asteroid.collider.radius;
 
             let offset = position - asteroid_position;
             let distance_squared = offset.length_squared();
