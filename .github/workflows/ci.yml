@@ -1,36 +1,56 @@
 name: CI
+
 on:
-    pull_request:
-        branches: [develop, main]
-    push:
-        branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-    check:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - name: Debug wayland pkg-config
-              run: |
-                    echo "--- installed wayland packages ---"
-                    dpkg -l | grep -i wayland || echo "NONE INSTALLED"
-                    echo "--- .pc files on disk ---"
-                    find / -name "wayland-client.pc" 2>/dev/null || echo "NOT ON DISK"
-                    echo "--- pkg-config default search path ---"
-                    pkg-config --variable pc_path pkg-config
-                    echo "--- current env ---"
-                    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-                    echo "PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR"
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
 
-            - name: Fix pkg-config search path
-              run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> "$GITHUB_ENV"
+      - name: Install Bevy Linux dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libgl1-mesa-dev
 
-            - uses: dtolnay/rust-toolchain@stable
-              with:
-                components: clippy, rustfmt
+      - name: Verify wayland is discoverable
+        run: |
+          set -euxo pipefail
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig" >> "$GITHUB_ENV"
+          export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig
+          pkg-config --modversion wayland-client
+          pkg-config --modversion alsa
+          pkg-config --modversion libudev
 
-            - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
-            - run: cargo fmt --check
-            - run: cargo clippy --all-targets --all-features -- -D warnings
-            - run: cargo test --all-features
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test

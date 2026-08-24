@@ -1,9 +1,13 @@
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
+mod asteroid;
 mod background;
 mod camera;
+mod combat;
+mod level;
 mod movement;
+mod physics;
 mod projectile;
 mod shapes;
 mod ship;
@@ -23,12 +27,25 @@ fn main() {
         .init_resource::<tuning::Tuning>()
         .add_plugins((
             shapes::ShapesPlugin,
+            level::LevelPlugin,
             movement::MovementPlugin,
             ship::ShipPlugin,
             projectile::ProjectilePlugin,
             background::BackgroundPlugin,
             camera::CameraPlugin,
+            physics::PhysicsPlugin,
+            combat::CombatPlugin,
+            asteroid::AsteroidPlugin,
         ))
-        .configure_sets(FixedUpdate, ship::ShipSet.before(movement::MovementSet))
+        .configure_sets(
+            FixedUpdate,
+            (
+                movement::MovementSet,
+                ship::ShipSet,
+                physics::PhysicsSet,
+                combat::CombatSet,
+            )
+                .chain(),
+        )
         .run();
 }

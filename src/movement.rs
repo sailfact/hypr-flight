@@ -17,11 +17,12 @@ pub struct Wrap;
 pub struct MovementSet;
 
 #[derive(Component, Default)]
-#[allow(dead_code)]
 pub struct Collider {
-    // Used when we add physics
     pub radius: f32,
 }
+
+#[derive(Component, Default)]
+pub struct WallCollision;
 
 #[derive(Component, Default)]
 pub struct Interp {
@@ -63,7 +64,10 @@ impl Plugin for MovementPlugin {
 //---------------------------------
 // Systems
 //---------------------------------
-fn integrate(time: Res<Time>, mut movers: Query<(&mut Transform, &Velocity)>) {
+fn integrate(
+    time: Res<Time>,
+    mut movers: Query<(&mut Transform, &Velocity), Without<WallCollision>>,
+) {
     let dt = time.delta_secs();
     for (mut transform, velocity) in &mut movers {
         transform.translation += (velocity.linear * dt).extend(0.0);

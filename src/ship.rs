@@ -2,7 +2,9 @@ use bevy::camera::Camera;
 use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
-use crate::movement::{Interp, Velocity};
+use crate::combat::{ContactCooldown, Health};
+use crate::level::*;
+use crate::movement::{Collider, Interp, Velocity, WallCollision};
 use crate::shapes::ShapeAssets;
 use crate::tuning::Tuning;
 
@@ -76,12 +78,25 @@ impl Plugin for ShipPlugin {
     }
 }
 
-fn spawn_ship(mut commands: Commands, shapes: Res<ShapeAssets>, tuning: Res<Tuning>) {
+fn spawn_ship(
+    mut commands: Commands,
+    shapes: Res<ShapeAssets>,
+    tuning: Res<Tuning>,
+    level: Res<Level>,
+) {
+    let start = level.start_position();
     commands.spawn((
         Ship {
             cooldown: ready_timer(tuning.fire_cooldown),
         },
-        Interp::default(),
+        Health(tuning.player_health),
+        ContactCooldown::ready(tuning.contact_cooldown),
+        Collider {
+            radius: tuning.ship_radius,
+        },
+        WallCollision,
+        Transform::from_translation(start.extend(0.0)),
+        Interp::at(start),
         children![(
             ShipHull,
             Bank::default(),
