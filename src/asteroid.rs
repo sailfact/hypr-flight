@@ -32,9 +32,9 @@ impl AsteroidSize {
     /// interesting outcome. Anything at 24 or above is a cork.
     pub fn radius(self) -> f32 {
         match self {
-            Self::Small => 20.0,
-            Self::Medium => 60.0,
-            Self::Large => 120.0,
+            Self::Small => 32.0,
+            Self::Medium => 64.0,
+            Self::Large => 128.0,
         }
     }
 

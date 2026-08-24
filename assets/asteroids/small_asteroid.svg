@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- body -->
+  <polygon fill="#4a4a52" points="116,64 104,41 91,17 64,20 39,21 23,41
+                                  11,64 25,87 39,108 64,107 89,106 106,88"/>
+
+  <!-- lit facet, upper left -->
+  <polygon fill="#5c5c66" points="64,20 39,21 23,41 11,64 40,58 52,32"/>
+
+  <!-- craters -->
+  <ellipse cx="78" cy="52" rx="11" ry="9" fill="#3a3a42"/>
+  <ellipse cx="52" cy="82" rx="8"  ry="7" fill="#3a3a42"/>
+  <ellipse cx="93" cy="83" rx="5"  ry="4" fill="#3a3a42"/>
+</svg>

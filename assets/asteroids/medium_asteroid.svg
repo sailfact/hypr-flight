@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- body -->
+  <polygon fill="#4a4a52" points="232,128 208,82 182,68 128,40 46,82 92,162 128,214 178,212 212,176"/>
+  <!-- craters -->
+  <ellipse cx="156" cy="104" rx="22" ry="18" fill="#3a3a42"/>
+  <ellipse cx="118" cy="158" rx="16"  ry="14" fill="#3a3a42"/>
+  <ellipse cx="186" cy="166" rx="10"  ry="8" fill="#3a3a42"/>
+
+  <!-- lit facet, upper left -->
+  <polygon fill="#5c5c66" points="128,40 78,42 46,82 22,128 80,116 104,64"/>
+  <!-- craters -->
+  <ellipse cx="50" cy="98" rx="6" ry="5" fill="#414149"/>
+  <ellipse cx="76" cy="80" rx="12" ry="10" fill="#414149"/>
+  <ellipse cx="98" cy="50" rx="6" ry="5" fill="#414149"/>
+
+  <!-- darkened facet, lower left -->
+  <polygon fill="#323236" points="178,212 78,216 22,128 80,116 92,162"/>
+  <!-- craters -->
+  <ellipse cx="60" cy="150" rx="18" ry="14" fill="#212125"/>
+  <ellipse cx="102" cy="194" rx="18"  ry="12" fill="#212125"/>
+
+</svg>
