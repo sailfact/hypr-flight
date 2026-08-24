@@ -2,6 +2,7 @@ use bevy::camera::Camera;
 use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
+use crate::combat::{ContactCooldown, Health};
 use crate::level::*;
 use crate::movement::{Collider, Interp, Velocity, WallCollision};
 use crate::shapes::ShapeAssets;
@@ -88,6 +89,8 @@ fn spawn_ship(
         Ship {
             cooldown: ready_timer(tuning.fire_cooldown),
         },
+        Health(tuning.player_health),
+        ContactCooldown::ready(tuning.contact_cooldown),
         Collider {
             radius: tuning.ship_radius,
         },

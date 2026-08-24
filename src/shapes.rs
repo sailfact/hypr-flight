@@ -5,6 +5,8 @@ use crate::tuning::Tuning;
 
 #[derive(Resource)]
 pub struct ShapeAssets {
+    pub asteroid: Handle<Mesh>,
+    pub asteroid_material: Handle<ColorMaterial>,
     pub ship: Handle<Mesh>,
     pub flame: Handle<Mesh>,
     pub bullet: Handle<Mesh>,
@@ -47,5 +49,7 @@ fn build_shapes(
         bullet_material: materials.add(Color::linear_rgb(6.0, 4.5, 2.0)),
         tile_mesh: meshes.add(Rectangle::new(level::TILE_SIZE, level::TILE_SIZE)),
         tile_material: materials.add(Color::linear_rgb(0.10, 0.12, 0.18)),
+        asteroid: meshes.add(Circle::new(1.0)),
+        asteroid_material: materials.add(Color::linear_rgb(0.35, 0.33, 0.30)),
     });
 }
