@@ -107,8 +107,11 @@ pub fn spawn_asteroid(
         // Without this the rock judders: it moves at 64 Hz in FixedUpdate
         // while the display runs faster, and it spawns away from the origin.
         Interp::at(position),
-        Mesh2d(shapes.asteroid.clone()),
-        MeshMaterial2d(shapes.asteroid_material.clone()),
+        Sprite {
+            image: shapes.asteroid.clone(),
+            custom_size: Some(Vec2::splat(radius * 2.0)),
+            ..default()
+        },
         Transform::from_translation(position.extend(0.0)).with_scale(Vec3::splat(radius)),
     ));
 }

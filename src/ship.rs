@@ -100,8 +100,11 @@ fn spawn_ship(
         children![(
             ShipHull,
             Bank::default(),
-            Mesh2d(shapes.ship.clone()),
-            MeshMaterial2d(shapes.ship_material.clone()),
+            Sprite {
+                image: shapes.ship.clone(),
+                custom_size: Some(Vec2::splat(tuning.ship_radius * 2.0 * tuning.ship_scale,)),
+                ..default()
+            },
             Transform::default(),
             children![(
                 ThrustFlame,

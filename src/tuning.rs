@@ -41,6 +41,7 @@ pub struct Tuning {
     pub asteroid_max_speed: f32,
     pub asteroid_split_speed: f32,
     pub contact_cooldown: f32,
+    pub ship_scale: f32,
 }
 
 impl Default for Tuning {
@@ -85,6 +86,7 @@ impl Default for Tuning {
             asteroid_max_speed: 120.0,
             asteroid_split_speed: 60.0,
             contact_cooldown: 0.6,
+            ship_scale: 2.0,
         }
     }
 }

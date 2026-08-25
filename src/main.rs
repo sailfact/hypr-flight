@@ -11,7 +11,6 @@ mod physics;
 mod projectile;
 mod shapes;
 mod ship;
-mod svg_mesh;
 mod tuning;
 
 fn main() {
