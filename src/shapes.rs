@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::level;
+use crate::svg_mesh::svg_to_mesh;
 use crate::tuning::Tuning;
 
 #[derive(Resource)]
@@ -33,10 +34,9 @@ fn build_shapes(
 ) {
     let r = tuning.ship_radius;
     commands.insert_resource(ShapeAssets {
-        ship: meshes.add(Triangle2d::new(
-            Vec2::new(0.0, r * 1.8),
-            Vec2::new(-r, -r),
-            Vec2::new(r, -r),
+        ship: meshes.add(svg_to_mesh(
+            include_str!("../assets/ships/player.svg"),
+            r * 2.0 * 2.5,
         )),
         flame: meshes.add(Triangle2d::new(
             Vec2::new(0.0, -r * 2.2),
@@ -49,7 +49,10 @@ fn build_shapes(
         bullet_material: materials.add(Color::linear_rgb(6.0, 4.5, 2.0)),
         tile_mesh: meshes.add(Rectangle::new(level::TILE_SIZE, level::TILE_SIZE)),
         tile_material: materials.add(Color::linear_rgb(0.10, 0.12, 0.18)),
-        asteroid: meshes.add(Circle::new(1.0)),
+        asteroid: meshes.add(svg_to_mesh(
+            include_str!("../assets/asteroids/medium_asteroid.svg"),
+            2.0,
+        )),
         asteroid_material: materials.add(Color::linear_rgb(0.35, 0.33, 0.30)),
     });
 }

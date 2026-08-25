@@ -15,10 +15,12 @@ impl FillVertexConstructor<[f32; 3]> for Ctor {
     }
 }
 
-/// Tessellate every filled path in `svg` into one flat mesh, centred on its
-/// bounding box and scaled so its longest axis spans `target_size` world units.
-pub fn svg_to_mesh(svg: &str, target_size: f32) -> Mesh {
+/// Tessellate every filled path in `svg` into one flat mesh.
+/// The viewBox centre becomes the mesh origin; the viewBox *width* maps to
+/// `width` world units. Height follows the aspect ratio.
+pub fn svg_to_mesh(svg: &str, width: f32) -> Mesh {
     let tree = usvg::Tree::from_str(svg, &usvg::Options::default()).expect("bad svg");
+    let size = tree.size();
 
     let mut builder = LyonPath::builder();
     collect(tree.root(), &mut builder);
@@ -33,21 +35,14 @@ pub fn svg_to_mesh(svg: &str, target_size: f32) -> Mesh {
         )
         .expect("tessellation failed");
 
-    let (mut min, mut max) = ([f32::MAX; 2], [f32::MIN; 2]);
-    for v in &buf.vertices {
-        min[0] = min[0].min(v[0]);
-        min[1] = min[1].min(v[1]);
-        max[0] = max[0].max(v[0]);
-        max[1] = max[1].max(v[1]);
-    }
-    let centre = [(min[0] + max[0]) * 0.5, (min[1] + max[1]) * 0.5];
-    let extent = (max[0] - min[0]).max(max[1] - min[1]).max(f32::EPSILON);
-    let scale = target_size / extent;
+    let scale = width / size.width();
+    let cx = size.width() * 0.5;
+    let cy = -size.height() * 0.5; // Ctor already negated Y
 
     let positions: Vec<[f32; 3]> = buf
         .vertices
         .iter()
-        .map(|v| [(v[0] - centre[0]) * scale, (v[1] - centre[1]) * scale, 0.0])
+        .map(|v| [(v[0] - cx) * scale, (v[1] - cy) * scale, 0.0])
         .collect();
     let n = positions.len();
 
