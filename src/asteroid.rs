@@ -112,7 +112,7 @@ pub fn spawn_asteroid(
             custom_size: Some(Vec2::splat(radius * 2.0)),
             ..default()
         },
-        Transform::from_translation(position.extend(0.0)).with_scale(Vec3::splat(radius)),
+        Transform::from_translation(position.extend(0.0)),
     ));
 }
 

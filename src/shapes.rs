@@ -32,8 +32,8 @@ fn build_shapes(
 ) {
     let r = tuning.ship_radius;
     commands.insert_resource(ShapeAssets {
-        ship: asset_server.load("../assets/ships/player.png"),
-        asteroid: asset_server.load("../assets/asteroids/asteroid.png"),
+        ship: asset_server.load("ships/player.png"),
+        asteroid: asset_server.load("asteroids/asteroid.png"),
         flame: meshes.add(Triangle2d::new(
             Vec2::new(0.0, -r * 2.2),
             Vec2::new(-r * 0.5, -r),

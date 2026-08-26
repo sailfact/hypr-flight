@@ -86,7 +86,7 @@ impl Default for Tuning {
             asteroid_max_speed: 120.0,
             asteroid_split_speed: 60.0,
             contact_cooldown: 0.6,
-            ship_scale: 2.0,
+            ship_scale: 4.0,
         }
     }
 }
